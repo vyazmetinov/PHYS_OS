@@ -1,0 +1,3 @@
+CUP:1
+PLATE:2
+GLASS:3

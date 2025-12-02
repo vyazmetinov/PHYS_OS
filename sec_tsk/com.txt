@@ -1,0 +1,8 @@
+sleep 5
+echo "Первая команда завершена"
+ls -l
+sleep 10
+echo "Ещё одна строка вывода"
+uname -a
+sleep 3
+date

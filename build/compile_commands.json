@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/Users/ivan/CLionProjects/Phys_OS/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-gcc-15 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk -o CMakeFiles/Phys_OS.dir/pths/integral.c.o -c /Users/ivan/CLionProjects/Phys_OS/pths/integral.c",
+  "file": "/Users/ivan/CLionProjects/Phys_OS/pths/integral.c",
+  "output": "CMakeFiles/Phys_OS.dir/pths/integral.c.o"
+},
+{
+  "directory": "/Users/ivan/CLionProjects/Phys_OS/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-gcc-15 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk -o CMakeFiles/Phys_OS.dir/msg_queue/itg.c.o -c /Users/ivan/CLionProjects/Phys_OS/msg_queue/itg.c",
+  "file": "/Users/ivan/CLionProjects/Phys_OS/msg_queue/itg.c",
+  "output": "CMakeFiles/Phys_OS.dir/msg_queue/itg.c.o"
+},
+{
+  "directory": "/Users/ivan/CLionProjects/Phys_OS/build",
+  "command": "/opt/homebrew/bin/aarch64-apple-darwin25-gcc-15 -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk -o CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o -c /Users/ivan/CLionProjects/Phys_OS/msg_queue/cs.c",
+  "file": "/Users/ivan/CLionProjects/Phys_OS/msg_queue/cs.c",
+  "output": "CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o"
+}
+]
