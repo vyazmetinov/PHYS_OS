@@ -70,6 +70,13 @@ build CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o: C_COMPILER__Phys_OS_unscanned_Deb
   OBJECT_DIR = CMakeFiles/Phys_OS.dir
   OBJECT_FILE_DIR = CMakeFiles/Phys_OS.dir/msg_queue
 
+build CMakeFiles/Phys_OS.dir/pths/itg.c.o: C_COMPILER__Phys_OS_unscanned_Debug /Users/ivan/CLionProjects/Phys_OS/pths/itg.c || cmake_object_order_depends_target_Phys_OS
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/Phys_OS.dir/pths/itg.c.o.d
+  FLAGS = -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -fcolor-diagnostics
+  OBJECT_DIR = CMakeFiles/Phys_OS.dir
+  OBJECT_FILE_DIR = CMakeFiles/Phys_OS.dir/pths
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target Phys_OS
@@ -78,7 +85,7 @@ build CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o: C_COMPILER__Phys_OS_unscanned_Deb
 #############################################
 # Link the executable Phys_OS
 
-build Phys_OS: C_EXECUTABLE_LINKER__Phys_OS_Debug CMakeFiles/Phys_OS.dir/pths/integral.c.o CMakeFiles/Phys_OS.dir/msg_queue/itg.c.o CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o
+build Phys_OS: C_EXECUTABLE_LINKER__Phys_OS_Debug CMakeFiles/Phys_OS.dir/pths/integral.c.o CMakeFiles/Phys_OS.dir/msg_queue/itg.c.o CMakeFiles/Phys_OS.dir/msg_queue/cs.c.o CMakeFiles/Phys_OS.dir/pths/itg.c.o
   CONFIG = Debug
   FLAGS = -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
   OBJECT_DIR = CMakeFiles/Phys_OS.dir
