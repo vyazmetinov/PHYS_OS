@@ -25,7 +25,28 @@ void *thread_worker(void *arg) {
 
 
 double precision(int from, int to, double absc[], double ord[], double eps) { //from, to - indexes
-    return 6 * eps / (ord[to] - (double)2 * ord[(from + to) / 2] - ord[from]);
+    int mid = (from + to) / 2;
+    double denom = ord[to] - 2.0 * ord[mid] - ord[from];
+
+    // Если знаменатель слишком мал, то функция почти линейна на этом участке.
+    // В таком случае берём разумный шаг как долю длины отрезка по x.
+    if (fabs(denom) < 1e-12) {
+        double interval = absc[to] - absc[from];
+        if (interval <= 0) {
+            return eps; // запасной вариант
+        }
+        return interval / 1000.0; // равномерный мелкий шаг
+    }
+
+    double h = fabs(6.0 * eps / denom);
+    if (h <= 0) {
+        double interval = absc[to] - absc[from];
+        if (interval <= 0) {
+            return eps;
+        }
+        h = interval / 1000.0;
+    }
+    return h;
 }
 
 // Линейная интерполяция значения функции в точке x
@@ -47,16 +68,8 @@ double value_at(double x, int from, int to, double absc[], double ord[]) {
             // доля пути по оси x
             double t = (x - x0) / (x1 - x0);
 
-            // длина отрезка между узлами
-            double dx = x1 - x0;
-            double dy = y1 - y0;
-            double len = sqrt(dx * dx + dy * dy);
-
-            // расстояние вдоль прямой до точки с такой же долей t
-            double dist = t * len;
-
-            double x_interp, y_interp;
-            return y_interp;
+            // линейная интерполяция по y
+            return y0 + t * (y1 - y0);
         }
     }
 
@@ -142,7 +155,8 @@ double parallel_square(int from, int to, double absc[], double ord[], double eps
 
 
 int main(int argc, char *argv[]) { //n, X, f(x), a, b, e || f(x), a, b, e
-    if (argc == 6) {
+    if (argc == atoi(argv[1]) * 2 + 5) {
+
         int n = atoi(argv[1]);
         double absc[n];
         for (int i = 2; i < n; i++) {
@@ -152,10 +166,10 @@ int main(int argc, char *argv[]) { //n, X, f(x), a, b, e || f(x), a, b, e
         for (int i = 2 + n; i < n * 2; i++) {
             ord[i] = atof(argv[i]);
         }
-        int a = atoi(argv[2 * n]);
-        int b = atoi(argv[2 * n + 1]);
-        double e = atof(argv[2 * n + 2]);
-        double res = parallel_square(a, b, absc, ord, e, pthread_amnt);
+        int a = atoi(argv[2 * n + 2]);
+        int b = atoi(argv[2 * n + 3]);
+        double e = atof(argv[2 * n + 4]);
+        double res = parallel_square(a - 1, b - 1, absc, ord, e, pthread_amnt);
         printf("%f\n", res);
     }
 }
