@@ -4,8 +4,22 @@
 #include <pthread.h>
 #include <math.h>
 #include <string.h>
+#include <sys/msg.h>
+#include <sys/ipc.h>
 
 const int pthread_amnt = 3;
+
+// Глобальная переменная для ID очереди сообщений
+int global_msgq_id = -1;
+
+// Структура сообщения для очереди
+typedef struct {
+    long mtype;           // Тип сообщения (обязательное поле)
+    int thread_id;        // ID потока
+    double from_val;      // Начало отрезка (индекс или значение)
+    double to_val;        // Конец отрезка
+    double result;        // Результат вычисления
+} msg_result_t;
 
 typedef struct {
     int from_idx;
@@ -13,14 +27,16 @@ typedef struct {
     double *absc;
     double *ord;
     double eps;
-    double result;
+    int thread_id;
+    int msgq_id;
 } ThreadData;
 
 typedef struct {
     double from_x;
     double to_x;
     double eps;
-    double result;
+    int thread_id;
+    int msgq_id;
 } ThreadDataCont;
 
 double square_dsc(int from_idx, int to_idx, double * absc, double * ord, double eps);
@@ -28,13 +44,51 @@ double square_cont(double from_x, double to_x, double eps);
 
 void *thread_worker(void *arg) {
     ThreadData *data = (ThreadData *)arg;
-    data->result = square_dsc(data->from_idx, data->to_idx, data->absc, data->ord, data->eps);
+    
+    // Вычисляем интеграл
+    double result = square_dsc(data->from_idx, data->to_idx, data->absc, data->ord, data->eps);
+    
+    // Формируем сообщение
+    msg_result_t msg;
+    msg.mtype = 1;
+    msg.thread_id = data->thread_id;
+    msg.from_val = data->from_idx;
+    msg.to_val = data->to_idx;
+    msg.result = result;
+    
+    // Отправляем результат в очередь сообщений
+    if (msgsnd(data->msgq_id, &msg, sizeof(msg) - sizeof(long), 0) == -1) {
+        perror("msgsnd (thread_worker)");
+    }
+    
+    printf("[Поток %d] Отправлен результат: %.6f (индексы %d-%d)\n", 
+           data->thread_id, result, data->from_idx, data->to_idx);
+    
     return NULL;
 }
 
 void *thread_worker_cont(void *arg) {
     ThreadDataCont *data = (ThreadDataCont *)arg;
-    data->result = square_cont(data->from_x, data->to_x, data->eps);
+    
+    // Вычисляем интеграл
+    double result = square_cont(data->from_x, data->to_x, data->eps);
+    
+    // Формируем сообщение
+    msg_result_t msg;
+    msg.mtype = 1;
+    msg.thread_id = data->thread_id;
+    msg.from_val = data->from_x;
+    msg.to_val = data->to_x;
+    msg.result = result;
+    
+    // Отправляем результат в очередь сообщений
+    if (msgsnd(data->msgq_id, &msg, sizeof(msg) - sizeof(long), 0) == -1) {
+        perror("msgsnd (thread_worker_cont)");
+    }
+    
+    printf("[Поток %d] Отправлен результат: %.6f (отрезок [%.6f, %.6f])\n", 
+           data->thread_id, result, data->from_x, data->to_x);
+    
     return NULL;
 }
 
@@ -229,31 +283,43 @@ double square_cont(double from_x, double to_x, double eps) {
     return sum;
 }
 
-// Параллельное вычисление интеграла на [from, to] по нитям
+// Параллельное вычисление интеграла на [from, to] с использованием очереди сообщений
 double parallel_square(int from, int to, double absc[], double ord[], double eps, int threads) {
     if (threads < 1) {
         threads = 1;
     }
 
-    int total = to - from; // количество индексов внутри [from, to)
+    int total = to - from;
     if (total <= 0) {
         return 0.0;
     }
 
-    // Минимум 2 точки на подотрезок для корректной работы
     const int MIN_POINTS = 2;
     
-    // Ограничиваем количество потоков, чтобы каждому хватило точек
     int max_threads = total / MIN_POINTS;
     if (max_threads < 1) max_threads = 1;
     if (threads > max_threads) {
         threads = max_threads;
     }
 
+    // Создаем очередь сообщений
+    key_t key = ftok("/tmp", 'D');
+    if (key == -1) {
+        perror("ftok");
+        return 0.0;
+    }
+    
+    int msgq_id = msgget(key, 0666 | IPC_CREAT);
+    if (msgq_id == -1) {
+        perror("msgget");
+        return 0.0;
+    }
+    
+    printf("\n[Главный поток] Создана очередь сообщений (ID=%d)\n", msgq_id);
+
     ThreadData data[threads];
     pthread_t tids[threads];
 
-    // Базовая длина подотрезка по индексам (не меньше MIN_POINTS)
     int base_len = total / threads;
     if (base_len < MIN_POINTS) {
         base_len = MIN_POINTS;
@@ -265,7 +331,6 @@ double parallel_square(int from, int to, double absc[], double ord[], double eps
         int next;
 
         if (k == threads - 1) {
-            // последний поток забирает всё, что осталось
             next = to;
         } else {
             next = current + base_len;
@@ -274,7 +339,6 @@ double parallel_square(int from, int to, double absc[], double ord[], double eps
             }
         }
 
-        // Проверка: убедимся, что сегмент не слишком мал
         if (next - current < 1) {
             break;
         }
@@ -284,7 +348,8 @@ double parallel_square(int from, int to, double absc[], double ord[], double eps
         data[tcount].absc     = absc;
         data[tcount].ord      = ord;
         data[tcount].eps      = eps;
-        data[tcount].result   = 0.0;
+        data[tcount].thread_id = tcount;
+        data[tcount].msgq_id  = msgq_id;
 
         pthread_create(&tids[tcount], NULL, thread_worker, &data[tcount]);
 
@@ -292,21 +357,40 @@ double parallel_square(int from, int to, double absc[], double ord[], double eps
         ++tcount;
     }
 
-    // если ни одного нормального подотрезка не получилось — считаем последовательно
     if (tcount == 0) {
+        msgctl(msgq_id, IPC_RMID, NULL);
         return square_dsc(from, to, absc, ord, eps);
     }
 
+    printf("[Главный поток] Запущено %d потоков, ожидаю результаты...\n", tcount);
+
+    // Собираем результаты из очереди сообщений
     double sum = 0.0;
     for (int k = 0; k < tcount; ++k) {
-        pthread_join(tids[k], NULL);
-        sum += data[k].result;
+        msg_result_t msg;
+        
+        if (msgrcv(msgq_id, &msg, sizeof(msg) - sizeof(long), 1, 0) == -1) {
+            perror("msgrcv");
+        } else {
+            printf("[Главный поток] Получен результат от потока %d: %.6f\n", 
+                   msg.thread_id, msg.result);
+            sum += msg.result;
+        }
     }
+
+    // Ждем завершения всех потоков
+    for (int k = 0; k < tcount; ++k) {
+        pthread_join(tids[k], NULL);
+    }
+
+    // Удаляем очередь сообщений
+    msgctl(msgq_id, IPC_RMID, NULL);
+    printf("[Главный поток] Очередь сообщений удалена\n");
 
     return sum;
 }
 
-// Параллельное вычисление интеграла непрерывной функции
+// Параллельное вычисление интеграла непрерывной функции с использованием очереди сообщений
 double parallel_square_cont(double from_x, double to_x, double eps, int threads) {
     if (threads < 1) {
         threads = 1;
@@ -317,20 +401,32 @@ double parallel_square_cont(double from_x, double to_x, double eps, int threads)
         return 0.0;
     }
     
-    // Минимальная длина подотрезка
     const double MIN_RANGE = 0.001;
     
-    // Ограничиваем количество потоков
     int max_threads = (int)(range / MIN_RANGE);
     if (max_threads < 1) max_threads = 1;
     if (threads > max_threads) {
         threads = max_threads;
     }
     
+    // Создаем очередь сообщений
+    key_t key = ftok("/tmp", 'C');
+    if (key == -1) {
+        perror("ftok");
+        return 0.0;
+    }
+    
+    int msgq_id = msgget(key, 0666 | IPC_CREAT);
+    if (msgq_id == -1) {
+        perror("msgget");
+        return 0.0;
+    }
+    
+    printf("\n[Главный поток] Создана очередь сообщений (ID=%d)\n", msgq_id);
+    
     ThreadDataCont data[threads];
     pthread_t tids[threads];
     
-    // Длина подотрезка на один поток
     double segment_len = range / threads;
     
     int tcount = 0;
@@ -339,13 +435,11 @@ double parallel_square_cont(double from_x, double to_x, double eps, int threads)
         double current_to;
         
         if (k == threads - 1) {
-            // Последний поток берет до конца
             current_to = to_x;
         } else {
             current_to = current_from + segment_len;
         }
         
-        // Проверка на корректность подотрезка
         if (current_to - current_from < 1e-10) {
             break;
         }
@@ -353,23 +447,43 @@ double parallel_square_cont(double from_x, double to_x, double eps, int threads)
         data[tcount].from_x = current_from;
         data[tcount].to_x = current_to;
         data[tcount].eps = eps;
-        data[tcount].result = 0.0;
+        data[tcount].thread_id = tcount;
+        data[tcount].msgq_id = msgq_id;
         
         pthread_create(&tids[tcount], NULL, thread_worker_cont, &data[tcount]);
         
         ++tcount;
     }
     
-    // Если ни одного потока не создано, считаем последовательно
     if (tcount == 0) {
+        msgctl(msgq_id, IPC_RMID, NULL);
         return square_cont(from_x, to_x, eps);
     }
     
+    printf("[Главный поток] Запущено %d потоков, ожидаю результаты...\n", tcount);
+    
+    // Собираем результаты из очереди сообщений
     double sum = 0.0;
     for (int k = 0; k < tcount; ++k) {
-        pthread_join(tids[k], NULL);
-        sum += data[k].result;
+        msg_result_t msg;
+        
+        if (msgrcv(msgq_id, &msg, sizeof(msg) - sizeof(long), 1, 0) == -1) {
+            perror("msgrcv");
+        } else {
+            printf("[Главный поток] Получен результат от потока %d: %.6f\n", 
+                   msg.thread_id, msg.result);
+            sum += msg.result;
+        }
     }
+    
+    // Ждем завершения всех потоков
+    for (int k = 0; k < tcount; ++k) {
+        pthread_join(tids[k], NULL);
+    }
+    
+    // Удаляем очередь сообщений
+    msgctl(msgq_id, IPC_RMID, NULL);
+    printf("[Главный поток] Очередь сообщений удалена\n");
     
     return sum;
 }

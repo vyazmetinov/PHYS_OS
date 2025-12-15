@@ -1,7 +1,4 @@
 # ninja log v6
-2	136	1765291138810337976	build.ninja	d96dbf89761fe49b
-1	611	1759660871429053067	CMakeFiles/Phys_OS.dir/main.cpp.o	c0f1221093ed4202
-8	296	1763040695252100603	CMakeFiles/Phys_OS.dir/phylocofy.c.o	c16197fff29ad0b2
+2	136	1765746559692592201	build.ninja	d96dbf89761fe49b
 282	2387	1763493399301088539	Phys_OS	65b8947a3ac1bc0d
-2	238	1761297004484673982	CMakeFiles/Phys_OS.dir/main.c.o	7becf5b9442e55da
 1	281	1763493399020273039	CMakeFiles/Phys_OS.dir/pths/integral.c.o	835bd7cb30ba1cee
