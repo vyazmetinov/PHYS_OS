@@ -142,7 +142,6 @@ double parallel_square_msgq(double from_x, double to_x, double eps, int processe
         processes = max_processes;
     }
     
-    printf("\n=== Создание очереди сообщений ===\n");
     
     // Создаем ключ для очереди сообщений
     key_t key = ftok("/tmp", 'I');
@@ -165,8 +164,7 @@ double parallel_square_msgq(double from_x, double to_x, double eps, int processe
             exit(1);
         }
     }
-    
-    printf("Очередь сообщений создана (ID=%d)\n", msgq_id);
+
     printf("\n=== Запуск %d процессов ===\n", processes);
     
     // Длина подотрезка на один процесс
@@ -251,19 +249,11 @@ double parallel_square_msgq(double from_x, double to_x, double eps, int processe
 
 int main(int argc, char *argv[]) {
     if (argc == 5 && strcmp(argv[1], "cont") == 0) {
-        printf("=================================================\n");
-        printf("  Интегрирование с использованием процессов\n");
-        printf("  и очередей сообщений System V (msgq)\n");
-        printf("=================================================\n");
-        printf("Функция: f(x) = sqrt(x)\n");
         
         double a = atof(argv[2]);
         double b = atof(argv[3]);
         double eps = atof(argv[4]);
         
-        printf("Интервал: [%.6f, %.6f]\n", a, b);
-        printf("Точность eps: %f\n", eps);
-        printf("Количество процессов: %d\n", process_amnt);
         
         double result = parallel_square_msgq(a, b, eps, process_amnt);
         

@@ -32,7 +32,7 @@ void *thread_worker_cont(void *arg) {
     // Открываем файл для чтения и записи
     int fd = open("sq.txt", O_RDWR, 0666);
     if (fd < 0) { perror("fileopen"); exit(1); }  // Проверка на ошибку
-
+    pthread_mutex_lock(&mutex);
     double cur_sq;  // Переменная для текущего значения интеграла
 
     // Перемещаем указатель файла в начало

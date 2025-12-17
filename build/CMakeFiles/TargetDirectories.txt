@@ -1,3 +1,0 @@
-/Users/ivan/CLionProjects/Phys_OS/build/CMakeFiles/Phys_OS.dir
-/Users/ivan/CLionProjects/Phys_OS/build/CMakeFiles/edit_cache.dir
-/Users/ivan/CLionProjects/Phys_OS/build/CMakeFiles/rebuild_cache.dir
