@@ -1,0 +1,10 @@
+cmake-build-debug/
+build/
+.idea/
+*.o
+*.out
+*.dat
+*.txt
+*.zip
+*.csv
+.DS_Store
